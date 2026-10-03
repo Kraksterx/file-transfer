@@ -1,6 +1,8 @@
 package com.example.filetransfer.data.repository
 
 import com.example.filetransfer.data.file.FileDataSource
+import com.example.filetransfer.data.local.TransferHistoryDao
+import com.example.filetransfer.data.local.TransferRecordEntity
 import com.example.filetransfer.data.socket.MessageCodec
 import com.example.filetransfer.data.socket.TransferSession
 import com.example.filetransfer.data.socket.TransferSessionProvider
@@ -22,19 +24,22 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import java.io.IOException
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlin.coroutines.coroutineContext
 
 /**
  * Orkestrasi transfer dua-fase (FT-05) di atas MessageCodec (FT-08)
- * dan FileDataSource (FT-09). Semua operasi I/O di Dispatchers.IO.
+ * dan FileDataSource (FT-09). Menyimpan riwayat ke Room (FT-11).
  */
-class TransferRepositoryImpl(
+@Singleton
+class TransferRepositoryImpl @Inject constructor(
     private val sessionProvider: TransferSessionProvider,
     private val fileDataSource: FileDataSource,
+    private val historyDao: TransferHistoryDao? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : TransferRepository {
 
@@ -87,15 +92,28 @@ class TransferRepositoryImpl(
                     streamFileOut(session, transferId, attachment)
                 }
 
-                _completed.emit(
-                    CompletedTransfer(
+                val completedTransfer = CompletedTransfer(
+                    transferId = transferId,
+                    peerName = peerName,
+                    direction = CompletedTransfer.Direction.SENT,
+                    message = message,
+                    files = attachments.map { IncomingFileMeta(it.name, it.sizeBytes) }
+                )
+                _completed.emit(completedTransfer)
+
+                // Simpan ke Room (FT-11)
+                historyDao?.insertRecord(
+                    TransferRecordEntity(
                         transferId = transferId,
                         peerName = peerName,
-                        direction = CompletedTransfer.Direction.SENT,
+                        direction = "SENT",
                         message = message,
-                        files = attachments.map { IncomingFileMeta(it.name, it.sizeBytes) }
+                        fileCount = attachments.size,
+                        totalSizeBytes = attachments.sumOf { it.sizeBytes },
+                        fileNamesJson = attachments.joinToString(", ") { it.name }
                     )
                 )
+                Unit
             }.also { activeJob = null }
         }
     }
@@ -150,15 +168,28 @@ class TransferRepositoryImpl(
                 receiveFileIn(session, request.transferId, meta)
             }
 
-            _completed.emit(
-                CompletedTransfer(
+            val completedTransfer = CompletedTransfer(
+                transferId = request.transferId,
+                peerName = request.senderName,
+                direction = CompletedTransfer.Direction.RECEIVED,
+                message = request.message,
+                files = request.files
+            )
+            _completed.emit(completedTransfer)
+
+            // Simpan ke Room (FT-11)
+            historyDao?.insertRecord(
+                TransferRecordEntity(
                     transferId = request.transferId,
                     peerName = request.senderName,
-                    direction = CompletedTransfer.Direction.RECEIVED,
+                    direction = "RECEIVED",
                     message = request.message,
-                    files = request.files
+                    fileCount = request.files.size,
+                    totalSizeBytes = request.files.sumOf { it.sizeBytes },
+                    fileNamesJson = request.files.joinToString(", ") { it.name }
                 )
             )
+            Unit
         }.also { activeJob = null }
     }
 

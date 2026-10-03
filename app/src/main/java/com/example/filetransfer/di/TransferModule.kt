@@ -2,6 +2,7 @@ package com.example.filetransfer.di
 
 import android.content.Context
 import com.example.filetransfer.data.file.FileDataSource
+import com.example.filetransfer.data.local.TransferHistoryDao
 import com.example.filetransfer.data.repository.TransferRepositoryImpl
 import com.example.filetransfer.data.socket.SocketDataSource
 import com.example.filetransfer.data.socket.SocketTransferSessionProvider
@@ -38,11 +39,13 @@ object TransferModule {
     @Singleton
     fun provideTransferRepository(
         sessionProvider: TransferSessionProvider,
-        fileDataSource: FileDataSource
+        fileDataSource: FileDataSource,
+        historyDao: TransferHistoryDao
     ): TransferRepository {
         return TransferRepositoryImpl(
             sessionProvider = sessionProvider,
-            fileDataSource = fileDataSource
+            fileDataSource = fileDataSource,
+            historyDao = historyDao
         )
     }
 }
