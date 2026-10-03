@@ -5,12 +5,15 @@ import com.example.filetransfer.domain.model.IncomingTransferRequest
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -64,12 +67,20 @@ class SocketTransferSessionProvider @Inject constructor(
     }
 
     override fun observeIncomingRequests(): Flow<IncomingTransferRequest> = flow {
-        while (_isSessionReady.value) {
+        Log.i(TAG, "reader hidup: menunggu sesi siap")
+        while (currentCoroutineContext().isActive) {
+            _isSessionReady.first { it }
             val socket = socketDataSource.getActiveSocket()
             if (socket == null || socket.isClosed) {
-                Log.w(TAG, "loop: socket hilang, berhenti membaca")
-                break
+                Log.w(TAG, "loop: socket hilang, tunggu sesi berikutnya")
+                _isSessionReady.first { !it }
+                continue
             }
+            Log.i(
+                TAG,
+                "loop: baca dari socket local=${socket.localPort} " +
+                    "remote=${socket.remoteSocketAddress}"
+            )
             val input = socket.getInputStream()
             val type = try {
                 MessageCodec.readFrameType(input)
@@ -77,12 +88,14 @@ class SocketTransferSessionProvider @Inject constructor(
                 if (e.cause is EOFException) {
                     Log.w(TAG, "loop: stream habis (peer menutup koneksi)")
                 } else {
-                    Log.e(TAG, "loop: frame rusak, berhenti", e)
+                    Log.e(TAG, "loop: frame rusak, tunggu sesi berikutnya", e)
                 }
-                break
+                _isSessionReady.first { !it }
+                continue
             } catch (e: IOException) {
                 Log.w(TAG, "loop: socket putus: ${e.message}")
-                break
+                _isSessionReady.first { !it }
+                continue
             }
             try {
                 when (type) {
@@ -138,12 +151,13 @@ class SocketTransferSessionProvider @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "loop: gagal proses frame, berhenti", e)
+                Log.e(TAG, "loop: gagal proses frame, tunggu sesi berikutnya", e)
                 activeSink?.onError("", e)
-                break
+                _isSessionReady.first { !it }
+                continue
             }
         }
-        Log.i(TAG, "loop: keluar (isSessionReady=${_isSessionReady.value})")
+        Log.i(TAG, "reader keluar (collector dibatalkan)")
     }.flowOn(Dispatchers.IO)
 
     /** Lewati satu file utuh (header sudah dibaca) agar stream tetap sejajar. */

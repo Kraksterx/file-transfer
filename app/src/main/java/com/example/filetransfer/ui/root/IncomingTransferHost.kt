@@ -12,21 +12,24 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
  */
 @Composable
 fun IncomingTransferHost(
-    viewModel: IncomingTransferViewModel = hiltViewModel(),
-    onAccepted: (peerName: String) -> Unit = {}
+    viewModel: IncomingTransferViewModel = hiltViewModel()
 ) {
     val pendingRequest by viewModel.pendingRequest.collectAsStateWithLifecycle()
+    val receivedSummary by viewModel.receivedSummary.collectAsStateWithLifecycle()
 
-    val request = pendingRequest ?: return
+    val request = pendingRequest
+    if (request != null) {
+        IncomingTransferDialog(
+            request = request,
+            onAccept = { incoming -> viewModel.acceptRequest(incoming) },
+            onReject = { incoming -> viewModel.rejectRequest(incoming) }
+        )
+    }
 
-    IncomingTransferDialog(
-        request = request,
-        onAccept = { incoming ->
-            viewModel.acceptRequest(incoming)
-            onAccepted(incoming.senderName)
-        },
-        onReject = { incoming ->
-            viewModel.rejectRequest(incoming)
-        }
-    )
+    receivedSummary?.let { done ->
+        IncomingTransferCompletedDialog(
+            request = done,
+            onDismiss = viewModel::dismissReceivedSummary
+        )
+    }
 }

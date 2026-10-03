@@ -62,6 +62,42 @@ fun IncomingTransferDialog(
     )
 }
 
+@Composable
+fun IncomingTransferCompletedDialog(
+    request: IncomingTransferRequest,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    AlertDialog(
+        modifier = modifier,
+        onDismissRequest = onDismiss,
+        title = { Text("File Berhasil Diterima") },
+        text = {
+            Column {
+                Text(
+                    "${request.files.size} file dari ${request.senderName} tersimpan di folder Download.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Lokasi: Download/ pada penyimpanan internal",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Spacer(Modifier.height(8.dp))
+                request.files.forEach { f ->
+                    Text(
+                        "- ${f.name} (${formatBytes(f.sizeBytes)})",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Selesai") }
+        }
+    )
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun PreviewIncomingDialog() {

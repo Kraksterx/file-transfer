@@ -21,6 +21,9 @@ class IncomingTransferViewModel @Inject constructor(
     private val _pendingRequest = MutableStateFlow<IncomingTransferRequest?>(null)
     val pendingRequest: StateFlow<IncomingTransferRequest?> = _pendingRequest.asStateFlow()
 
+    private val _receivedSummary = MutableStateFlow<IncomingTransferRequest?>(null)
+    val receivedSummary: StateFlow<IncomingTransferRequest?> = _receivedSummary.asStateFlow()
+
     init {
         viewModelScope.launch {
             observeIncomingTransferUseCase().collect { request ->
@@ -33,7 +36,12 @@ class IncomingTransferViewModel @Inject constructor(
         _pendingRequest.value = null
         viewModelScope.launch {
             respondToTransferUseCase(request, accept = true)
+                .onSuccess { _receivedSummary.value = request }
         }
+    }
+
+    fun dismissReceivedSummary() {
+        _receivedSummary.value = null
     }
 
     fun rejectRequest(request: IncomingTransferRequest) {

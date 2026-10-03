@@ -34,17 +34,7 @@ fun AppNavHost(
     val currentRoute = navBackStackEntry?.destination?.route
 
     // Global Incoming Transfer Request Dialog (PRD Assumption #1)
-    IncomingTransferHost(
-        onAccepted = { peerName ->
-            navController.navigate(Screen.Transfer.createRoute(peerName)) {
-                popUpTo(navController.graph.findStartDestination().id) {
-                    saveState = true
-                }
-                launchSingleTop = true
-                restoreState = true
-            }
-        }
-    )
+    IncomingTransferHost()
 
     Scaffold(
         bottomBar = {

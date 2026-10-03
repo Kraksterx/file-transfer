@@ -265,7 +265,7 @@ class TransferRepositoryImpl @Inject constructor(
         override suspend fun onEnd(transferId: String) {
             runCatching { out?.close() }
             out = null
-            fileDataSource.finalizeDownload(fileName, mimeType.ifEmpty { null })
+            fileDataSource.finalizeDownload()
             publishProgress(fileKey, expectedBytes, expectedBytes)
             filesDone += 1
             if (filesDone >= expectedFileCount) {

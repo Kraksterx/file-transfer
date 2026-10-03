@@ -55,49 +55,39 @@ class FileDataSource(
         resolver.openInputStream(Uri.parse(attachment.uri))
             ?: throw java.io.IOException("Gagal membuka ${attachment.name}")
 
+    private var pendingItem: Uri? = null
+
     /** Simpan file masuk ke folder Download tanpa izin storage. */
     fun createDownloadStream(displayName: String, mimeType: String?): OutputStream {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val values = ContentValues().apply {
-                put(MediaStore.Downloads.DISPLAY_NAME, uniqueDisplayName(displayName))
+                put(MediaStore.Downloads.DISPLAY_NAME, displayName)
                 put(MediaStore.Downloads.MIME_TYPE, mimeType ?: "application/octet-stream")
                 put(MediaStore.Downloads.IS_PENDING, 1)
             }
             val collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
             val item = resolver.insert(collection, values)
                 ?: throw java.io.IOException("Gagal membuat entri MediaStore")
-            resolver.openOutputStream(item)
+            resolver.openOutputStream(item)?.also { pendingItem = item }
                 ?: throw java.io.IOException("Gagal membuka output MediaStore")
         } else {
             val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
             dir.mkdirs()
-            java.io.FileOutputStream(java.io.File(dir, uniqueDisplayName(displayName)))
+            java.io.FileOutputStream(java.io.File(dir, displayName))
         }
     }
 
-    /** Tandai entri MediaStore siap dibaca pengguna setelah stream ditutup (API 29+). */
-    fun finalizeDownload(displayName: String, mimeType: String?) {
+    /**
+     * Tandai entri MediaStore siap dibaca pengguna setelah stream ditutup (API 29+).
+     * Update per Uri hasil insert, bukan per nama: nama tidak unik dan bisa bentrok.
+     */
+    fun finalizeDownload() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+        val item = pendingItem ?: return
+        pendingItem = null
         val values = ContentValues().apply {
             put(MediaStore.Downloads.IS_PENDING, 0)
         }
-        val collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
-        val selection = "${MediaStore.Downloads.DISPLAY_NAME} = ?"
-        resolver.update(
-            collection,
-            values,
-            selection,
-            arrayOf(uniqueDisplayName(displayName))
-        )
-    }
-
-    private fun uniqueDisplayName(name: String): String {
-        val stamp = System.currentTimeMillis()
-        val dot = name.lastIndexOf('.')
-        return if (dot > 0) {
-            "${name.substring(0, dot)}_$stamp${name.substring(dot)}"
-        } else {
-            "${name}_$stamp"
-        }
+        resolver.update(item, values, null, null)
     }
 }
