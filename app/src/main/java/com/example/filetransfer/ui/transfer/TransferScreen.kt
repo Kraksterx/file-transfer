@@ -38,8 +38,7 @@ import com.example.filetransfer.ui.components.AttachmentRow
 import com.example.filetransfer.ui.components.TransferProgressBar
 import com.example.filetransfer.ui.components.formatBytes
 import com.example.filetransfer.ui.theme.FileTransferTheme
-import com.example.filetransfer.ui.theme.md_error
-import com.example.filetransfer.ui.theme.md_success
+import com.example.filetransfer.ui.theme.LocalSemanticColors
 
 /**
  * Layar Transfer (wireframe 2.4 - 2.7, FT-05 + FT-10).
@@ -206,7 +205,7 @@ private fun SuccessContent(
             modifier = Modifier.padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("(v)", style = MaterialTheme.typography.displaySmall, color = md_success)
+            Text("(v)", style = MaterialTheme.typography.displaySmall, color = LocalSemanticColors.current.success)
             Spacer(Modifier.height(8.dp))
             Text("File berhasil terkirim", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(12.dp))
@@ -243,7 +242,7 @@ private fun FailedContent(
             modifier = Modifier.padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("(x)", style = MaterialTheme.typography.displaySmall, color = md_error)
+            Text("(x)", style = MaterialTheme.typography.displaySmall, color = LocalSemanticColors.current.error)
             Spacer(Modifier.height(8.dp))
             Text("Transfer gagal", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
@@ -269,7 +268,7 @@ private fun FailedContent(
 @Preview(showBackground = true)
 @Composable
 private fun PreviewCompose() {
-    FileTransferTheme(dynamicColor = false) {
+    FileTransferTheme {
         ComposeContent(
             state = TransferUiState(
                 peerName = "Samsung A54",
@@ -287,7 +286,7 @@ private fun PreviewCompose() {
 @Preview(showBackground = true)
 @Composable
 private fun PreviewSending() {
-    FileTransferTheme(dynamicColor = false) {
+    FileTransferTheme {
         SendingContent(
             state = TransferUiState(
                 attachments = listOf(

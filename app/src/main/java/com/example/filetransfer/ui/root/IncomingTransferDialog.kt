@@ -65,7 +65,7 @@ fun IncomingTransferDialog(
 @Preview(showBackground = true)
 @Composable
 private fun PreviewIncomingDialog() {
-    FileTransferTheme(dynamicColor = false) {
+    FileTransferTheme {
         IncomingTransferDialog(
             request = IncomingTransferRequest(
                 transferId = "t1",
