@@ -3,8 +3,9 @@ package com.example.filetransfer.di
 import android.content.Context
 import com.example.filetransfer.data.file.FileDataSource
 import com.example.filetransfer.data.repository.TransferRepositoryImpl
+import com.example.filetransfer.data.socket.SocketDataSource
+import com.example.filetransfer.data.socket.SocketTransferSessionProvider
 import com.example.filetransfer.data.socket.TransferSessionProvider
-import com.example.filetransfer.data.socket.UnavailableSessionProvider
 import com.example.filetransfer.domain.repository.TransferRepository
 import dagger.Module
 import dagger.Provides
@@ -27,8 +28,10 @@ object TransferModule {
 
     @Provides
     @Singleton
-    fun provideTransferSessionProvider(): TransferSessionProvider {
-        return UnavailableSessionProvider()
+    fun provideTransferSessionProvider(
+        socketDataSource: SocketDataSource
+    ): TransferSessionProvider {
+        return SocketTransferSessionProvider(socketDataSource)
     }
 
     @Provides

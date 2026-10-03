@@ -4,6 +4,7 @@ import android.content.Context
 import com.example.filetransfer.data.p2p.WifiP2pDataSource
 import com.example.filetransfer.data.repository.P2pRepositoryImpl
 import com.example.filetransfer.data.socket.SocketDataSource
+import com.example.filetransfer.data.socket.TransferSessionProvider
 import com.example.filetransfer.domain.repository.P2pRepository
 import dagger.Module
 import dagger.Provides
@@ -35,8 +36,9 @@ object P2pModule {
     fun provideP2pRepository(
         @ApplicationContext context: Context,
         wifiP2pDataSource: WifiP2pDataSource,
-        socketDataSource: SocketDataSource
+        socketDataSource: SocketDataSource,
+        sessionProvider: TransferSessionProvider
     ): P2pRepository {
-        return P2pRepositoryImpl(context, wifiP2pDataSource, socketDataSource)
+        return P2pRepositoryImpl(context, wifiP2pDataSource, socketDataSource, sessionProvider)
     }
 }

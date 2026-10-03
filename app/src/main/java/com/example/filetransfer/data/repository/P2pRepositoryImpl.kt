@@ -4,6 +4,8 @@ import android.content.Context
 import android.location.LocationManager
 import com.example.filetransfer.data.p2p.WifiP2pDataSource
 import com.example.filetransfer.data.socket.SocketDataSource
+import com.example.filetransfer.data.socket.SocketTransferSessionProvider
+import com.example.filetransfer.data.socket.TransferSessionProvider
 import com.example.filetransfer.domain.model.ConnectionState
 import com.example.filetransfer.domain.model.P2pError
 import com.example.filetransfer.domain.model.Peer
@@ -25,7 +27,8 @@ import javax.inject.Singleton
 class P2pRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val p2pDataSource: WifiP2pDataSource,
-    private val socketDataSource: SocketDataSource
+    private val socketDataSource: SocketDataSource,
+    private val sessionProvider: TransferSessionProvider
 ) : P2pRepository {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -70,6 +73,7 @@ class P2pRepositoryImpl @Inject constructor(
                     )
                     establishSocket(info.isGroupOwner, info.groupOwnerAddress)
                 } else {
+                    (sessionProvider as? SocketTransferSessionProvider)?.updateSessionReady(false)
                     socketDataSource.closeSockets()
                     _connectionState.value = ConnectionState.Idle
                 }
@@ -82,6 +86,7 @@ class P2pRepositoryImpl @Inject constructor(
             try {
                 if (isGroupOwner) {
                     socketDataSource.startServer()
+                    (sessionProvider as? SocketTransferSessionProvider)?.updateSessionReady(true)
                     _connectionState.value = ConnectionState.ServiceReady(
                         isGroupOwner = true,
                         hostAddress = "0.0.0.0"
@@ -89,6 +94,7 @@ class P2pRepositoryImpl @Inject constructor(
                 } else {
                     if (groupOwnerAddress != null) {
                         socketDataSource.connectToServer(groupOwnerAddress)
+                        (sessionProvider as? SocketTransferSessionProvider)?.updateSessionReady(true)
                         _connectionState.value = ConnectionState.ServiceReady(
                             isGroupOwner = false,
                             hostAddress = groupOwnerAddress.hostAddress ?: ""
@@ -136,6 +142,7 @@ class P2pRepositoryImpl @Inject constructor(
     }
 
     override fun disconnect() {
+        (sessionProvider as? SocketTransferSessionProvider)?.updateSessionReady(false)
         socketDataSource.closeSockets()
         p2pDataSource.disconnect(
             onSuccess = {
