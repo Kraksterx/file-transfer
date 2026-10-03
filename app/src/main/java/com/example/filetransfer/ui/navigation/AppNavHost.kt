@@ -17,7 +17,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.filetransfer.ui.discovery.DiscoveryScreen
+import com.example.filetransfer.ui.connection.ConnectionScreen
 import com.example.filetransfer.ui.history.HistoryScreen
 import com.example.filetransfer.ui.root.IncomingTransferHost
 import com.example.filetransfer.ui.transfer.TransferScreen
@@ -78,11 +78,11 @@ fun AppNavHost(
                 .padding(innerPadding)
         ) {
             composable(Screen.Discovery.route) {
-                DiscoveryScreen(
-                    onRequestPermission = onRequestPermission,
-                    onConnectedToPeer = {
+                ConnectionScreen(
+                    onNavigateToTransfer = {
                         navController.navigate(Screen.Transfer.route)
-                    }
+                    },
+                    onRequestPermission = onRequestPermission
                 )
             }
 
