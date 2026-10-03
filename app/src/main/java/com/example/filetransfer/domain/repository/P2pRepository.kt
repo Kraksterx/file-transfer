@@ -14,4 +14,7 @@ interface P2pRepository {
     fun stopPeerDiscovery()
     fun connect(peer: Peer)
     fun disconnect()
+
+    /** Baca ulang izin + lokasi dan emit ulang (dipanggil setelah grant / ON_RESUME). */
+    fun refreshPrerequisites()
 }

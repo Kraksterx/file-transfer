@@ -10,12 +10,17 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import com.example.filetransfer.domain.repository.P2pRepository
 import com.example.filetransfer.ui.navigation.AppNavHost
 import com.example.filetransfer.ui.theme.FileTransferTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var p2pRepository: P2pRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,7 +39,11 @@ class MainActivity : ComponentActivity() {
 
                 val permissionLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestMultiplePermissions()
-                ) { /* Permissions status updated */ }
+                ) {
+                    // Hasil grant/deny langsung dibaca ulang agar banner prasyarat hilang
+                    // tanpa relog (FT-06).
+                    p2pRepository.refreshPrerequisites()
+                }
 
                 AppNavHost(
                     onRequestPermission = {

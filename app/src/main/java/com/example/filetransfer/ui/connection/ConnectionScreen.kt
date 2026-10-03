@@ -23,6 +23,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.filetransfer.domain.model.ConnectionState
 import com.example.filetransfer.domain.model.Peer
@@ -41,8 +44,24 @@ fun ConnectionScreen(
     val connectionState by viewModel.connectionState.collectAsStateWithLifecycle()
     val peers by viewModel.peers.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var showGuide by remember { mutableStateOf(false) }
+
+    // Cek ulang prasyarat tiap kembali ke layar (mis. habis dari Settings)
+    // agar banner hilang tanpa relog (FT-06).
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshPrerequisites()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     val isDiscovering = connectionState is ConnectionState.Discovering
+
+    if (showGuide) {
+        GuideDialog(onDismiss = { showGuide = false })
+    }
 
     Scaffold(
         topBar = {
@@ -56,7 +75,7 @@ fun ConnectionScreen(
                             fontSize = 18.sp
                         )
                         Text(
-                            "Discovery Cari",
+                            "Cari perangkat sekitar",
                             color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
                             fontSize = 12.sp
                         )
@@ -75,8 +94,8 @@ fun ConnectionScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { }) {
-                        Icon(Icons.Default.PersonOutline, contentDescription = "Profile", tint = MaterialTheme.colorScheme.onPrimary)
+                    IconButton(onClick = { showGuide = true }) {
+                        Icon(Icons.Outlined.Info, contentDescription = "Panduan", tint = MaterialTheme.colorScheme.onPrimary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -108,10 +127,10 @@ fun ConnectionScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Prasyarat Belum Terpenuhi", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                                    Text("Belum bisa mencari perangkat", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text("Pastikan Wi-Fi, Lokasi, dan Izin Aplikasi diaktifkan.", color = MaterialTheme.colorScheme.onBackground, fontSize = 14.sp)
+                                Text("Nyalakan Wi-Fi dan lokasi, lalu izinkan akses perangkat di sekitar.", color = MaterialTheme.colorScheme.onBackground, fontSize = 14.sp)
                                 Spacer(modifier = Modifier.height(8.dp))
                                 OutlinedButton(
                                     onClick = {
@@ -148,11 +167,6 @@ fun ConnectionScreen(
                         RadarSearchingView(onCancel = { viewModel.disconnect() })
                     }
                 } else {
-                    // Speed Info Card
-                    item {
-                        SpeedInfoCard()
-                    }
-
                     // Search Button
                     item {
                         Button(
@@ -180,7 +194,7 @@ fun ConnectionScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Perangkat tersedia", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onBackground)
+                                Text("Perangkat di sekitar", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onBackground)
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Surface(
                                     color = MaterialTheme.colorScheme.surfaceVariant,
@@ -201,7 +215,7 @@ fun ConnectionScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(LocalSemanticColors.current.success))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Radar aktif", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("Memindai...", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -209,14 +223,25 @@ fun ConnectionScreen(
 
                     if (peers.isEmpty() && !isDiscovering) {
                         item {
-                            Text(
-                                "Perangkat tidak ditemukan",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 16.dp),
-                                textAlign = TextAlign.Center
-                            )
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    "Tidak ada perangkat yang ditemukan",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                TextButton(
+                                    onClick = { viewModel.discoverPeers() },
+                                    enabled = prerequisiteState.isReady
+                                ) {
+                                    Text("Cari Ulang")
+                                }
+                            }
                         }
                     } else {
                         items(peers) { peer ->
@@ -269,7 +294,7 @@ fun MyDeviceCard(prerequisiteState: PrerequisiteState, isDiscovering: Boolean) {
                     Text("(Saya)", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
                 Text(
-                    if (isDiscovering) "Wi-Fi Direct 5GHz • Terbuka untuk sekitar" else "Siap menerima & mengirim",
+                    if (isDiscovering) "Terlihat oleh perangkat sekitar" else "Siap untuk berbagi file",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp
                 )
@@ -290,42 +315,6 @@ fun MyDeviceCard(prerequisiteState: PrerequisiteState, isDiscovering: Boolean) {
                 }
             } else {
                 Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(LocalSemanticColors.current.success))
-            }
-        }
-    }
-}
-
-@Composable
-fun SpeedInfoCard() {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text("KECEPATAN MAKSIMAL", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                Text("Wi-Fi Direct 5GHz", color = MaterialTheme.colorScheme.onBackground, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(LocalSemanticColors.current.success))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Kanal lokal aman • Tanpa kuota internet", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
-                }
-            }
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.Speed, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             }
         }
     }
@@ -388,7 +377,7 @@ fun RadarSearchingView(onCancel: () -> Unit) {
             Text("Mencari perangkat...", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                "Pastikan perangkat penerima telah mengaktifkan mode Wi-Fi Direct dan visibilitas perangkat diatur ke publik.",
+                "Pastikan HP tujuan membuka halaman ini dan Wi-Fi-nya menyala.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp,
                 textAlign = TextAlign.Center,
@@ -523,6 +512,43 @@ fun PeerItemCard(
 }
 
 @Composable
+fun GuideDialog(onDismiss: () -> Unit) {
+    val steps = listOf(
+        "Nyalakan Wi-Fi dan lokasi di kedua HP.",
+        "Izinkan akses perangkat di sekitar saat diminta.",
+        "Tekan Cari Perangkat, lalu Hubungkan ke HP tujuan dan terima undangannya.",
+        "Setelah status Terhubung, tekan Kirim File, pilih file, lalu Kirim."
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Panduan Berbagi File") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                steps.forEachIndexed { index, step ->
+                    Row {
+                        Text(
+                            "${index + 1}. ",
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Text(step, color = MaterialTheme.colorScheme.onBackground)
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Kedua HP terhubung langsung via Wi-Fi Direct — tanpa internet dan tanpa kuota.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 12.sp
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Mengerti") }
+        }
+    )
+}
+
+@Composable
 fun TipsCard() {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
@@ -539,7 +565,7 @@ fun TipsCard() {
                 Text("Tips Berbagi Cepat", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    "Pastikan perangkat tujuan membuka halaman pencarian ini dan berada dalam jangkauan 10 meter.",
+                    "Buka halaman ini di kedua HP dan dekatkan dalam jarak sekitar 10 meter.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp,
                     lineHeight = 16.sp

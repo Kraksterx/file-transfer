@@ -10,6 +10,7 @@ import com.example.filetransfer.domain.usecase.ConnectToPeerUseCase
 import com.example.filetransfer.domain.usecase.DisconnectUseCase
 import com.example.filetransfer.domain.usecase.DiscoverPeersUseCase
 import com.example.filetransfer.domain.usecase.ObservePrerequisitesUseCase
+import com.example.filetransfer.domain.usecase.RefreshPrerequisitesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +23,7 @@ class ConnectionViewModel @Inject constructor(
     private val discoverPeersUseCase: DiscoverPeersUseCase,
     private val connectToPeerUseCase: ConnectToPeerUseCase,
     private val disconnectUseCase: DisconnectUseCase,
+    private val refreshPrerequisitesUseCase: RefreshPrerequisitesUseCase,
     repository: P2pRepository
 ) : ViewModel() {
 
@@ -56,5 +58,10 @@ class ConnectionViewModel @Inject constructor(
 
     fun disconnect() {
         disconnectUseCase()
+    }
+
+    /** Cek ulang prasyarat (dipanggil tiap ON_RESUME agar banner reaktif). */
+    fun refreshPrerequisites() {
+        refreshPrerequisitesUseCase()
     }
 }

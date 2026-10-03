@@ -8,12 +8,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     data object Discovery : Screen("discovery", "Cari", Icons.Default.Search)
-    data object Transfer : Screen("transfer", "Transfer", Icons.Default.Send)
     data object History : Screen("history", "Riwayat", Icons.Default.List)
+    /** Destination (bukan tab): dibuka via "Kirim File" setelah peer terhubung. */
+    data object Transfer : Screen("transfer", "Transfer", Icons.Default.Send)
 }
 
+/** Transfer bukan tab bar — transfer butuh koneksi dulu (via Kirim File). */
 val bottomNavItems = listOf(
     Screen.Discovery,
-    Screen.Transfer,
     Screen.History
 )

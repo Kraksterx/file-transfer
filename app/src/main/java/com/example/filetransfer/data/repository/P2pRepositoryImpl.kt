@@ -40,10 +40,14 @@ class P2pRepositoryImpl @Inject constructor(
 
     private val _permissionsGranted = MutableStateFlow(p2pDataSource.hasNearbyWifiPermission())
 
+    /** Pemicu cek ulang manual (mis. setelah grant izin / kembali dari Settings). */
+    private val _refreshTick = MutableStateFlow(0)
+
     override val prerequisitesState: Flow<PrerequisiteState> = combine(
         p2pDataSource.observeP2pState(),
-        _permissionsGranted
-    ) { p2pEnabled, permissionGranted ->
+        _permissionsGranted,
+        _refreshTick
+    ) { p2pEnabled, permissionGranted, _ ->
         val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
         val locationEnabled = locationManager?.isProviderEnabled(LocationManager.GPS_PROVIDER) == true ||
                 locationManager?.isProviderEnabled(LocationManager.NETWORK_PROVIDER) == true
@@ -61,6 +65,11 @@ class P2pRepositoryImpl @Inject constructor(
 
     fun updatePermissionStatus(isGranted: Boolean) {
         _permissionsGranted.value = isGranted
+    }
+
+    override fun refreshPrerequisites() {
+        _permissionsGranted.value = p2pDataSource.hasNearbyWifiPermission()
+        _refreshTick.value += 1
     }
 
     private fun observeConnectionInfo() {
