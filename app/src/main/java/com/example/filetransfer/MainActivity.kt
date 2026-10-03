@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.example.filetransfer.ui.theme.FileTransferTheme
+import com.example.filetransfer.ui.connection.ConnectionScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -21,20 +22,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             FileTransferTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Wi-Fi Direct File Transfer",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    // Memuat Layar Discovery / Connection
+                    ConnectionScreen()
                 }
             }
         }
     }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "App: $name",
-        modifier = modifier
-    )
 }
