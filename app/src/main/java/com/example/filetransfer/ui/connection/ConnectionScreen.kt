@@ -37,7 +37,7 @@ import com.example.filetransfer.ui.theme.LocalSemanticColors
 @Composable
 fun ConnectionScreen(
     viewModel: ConnectionViewModel = hiltViewModel(),
-    onNavigateToTransfer: () -> Unit = {},
+    onNavigateToTransfer: (peerName: String) -> Unit = {},
     onRequestPermission: () -> Unit = {}
 ) {
     val prerequisiteState by viewModel.prerequisiteState.collectAsStateWithLifecycle()
@@ -84,9 +84,9 @@ fun ConnectionScreen(
                 navigationIcon = {
                     Box(
                         modifier = Modifier
-                            .padding(start = 16.dp, end = 8.dp)
-                            .size(42.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .padding(start = 12.dp, end = 4.dp)
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(10.dp))
                             .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.15f)),
                         contentAlignment = Alignment.Center
                     ) {
@@ -402,7 +402,7 @@ fun PeerItemCard(
     peer: Peer,
     onConnect: (Peer) -> Unit,
     onDisconnect: () -> Unit,
-    onSendFile: () -> Unit = {}
+    onSendFile: (peerName: String) -> Unit = {}
 ) {
     val isInvited = peer.status == PeerStatus.INVITED
     val isConnected = peer.status == PeerStatus.CONNECTED
@@ -470,7 +470,7 @@ fun PeerItemCard(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Button(
-                        onClick = onSendFile,
+                        onClick = { onSendFile(peer.deviceName) },
                         shape = RoundedCornerShape(8.dp),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                     ) {

@@ -13,10 +13,12 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.filetransfer.ui.connection.ConnectionScreen
 import com.example.filetransfer.ui.history.HistoryScreen
 import com.example.filetransfer.ui.root.IncomingTransferHost
@@ -33,8 +35,8 @@ fun AppNavHost(
 
     // Global Incoming Transfer Request Dialog (PRD Assumption #1)
     IncomingTransferHost(
-        onAccepted = {
-            navController.navigate(Screen.Transfer.route) {
+        onAccepted = { peerName ->
+            navController.navigate(Screen.Transfer.createRoute(peerName)) {
                 popUpTo(navController.graph.findStartDestination().id) {
                     saveState = true
                 }
@@ -79,14 +81,22 @@ fun AppNavHost(
         ) {
             composable(Screen.Discovery.route) {
                 ConnectionScreen(
-                    onNavigateToTransfer = {
-                        navController.navigate(Screen.Transfer.route)
+                    onNavigateToTransfer = { peerName ->
+                        navController.navigate(Screen.Transfer.createRoute(peerName))
                     },
                     onRequestPermission = onRequestPermission
                 )
             }
 
-            composable(Screen.Transfer.route) {
+            composable(
+                route = Screen.Transfer.route,
+                arguments = listOf(
+                    navArgument(Screen.Transfer.ARG_PEER_NAME) {
+                        type = NavType.StringType
+                        defaultValue = ""
+                    }
+                )
+            ) {
                 val transferViewModel: TransferViewModel = hiltViewModel()
                 TransferScreen(
                     viewModel = transferViewModel,

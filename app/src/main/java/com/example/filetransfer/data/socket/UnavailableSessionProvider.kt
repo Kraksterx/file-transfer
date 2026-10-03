@@ -26,4 +26,27 @@ class UnavailableSessionProvider : TransferSessionProvider {
     override fun closeSession() {
         ready.value = false
     }
+
+    private fun unavailable(): Nothing =
+        throw IOException("Socket belum siap (ServiceReady). Menunggu SocketDataSource FT-04.")
+
+    override suspend fun sendRequest(frame: MessageCodec.RequestFrame): Unit = unavailable()
+
+    override suspend fun awaitResponse(
+        transferId: String,
+        timeoutMs: Long
+    ): MessageCodec.ResponseFrame = unavailable()
+
+    override suspend fun sendFileHeader(frame: MessageCodec.FileHeaderFrame): Unit = unavailable()
+
+    override suspend fun sendFileChunk(transferId: String, buffer: ByteArray, len: Int): Unit =
+        unavailable()
+
+    override suspend fun sendFileEnd(transferId: String): Unit = unavailable()
+
+    override suspend fun sendResponse(frame: MessageCodec.ResponseFrame): Unit = unavailable()
+
+    override fun setIncomingSink(sink: IncomingFileSink?) {
+        // no-op: tidak ada sesi
+    }
 }

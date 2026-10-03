@@ -8,13 +8,16 @@ import com.example.filetransfer.domain.model.TransferStatus
  * FT-05 (compose), FT-10 (progres per fileId).
  */
 data class TransferUiState(
-    val peerName: String = "Samsung A54",
+    /** Diisi dari argumen navigasi (nama peer yang terhubung). */
+    val peerName: String = "",
     val attachments: List<SelectedAttachment> = emptyList(),
     val message: String = "",
     val status: TransferStatus = TransferStatus.IDLE,
     val progressFractions: Map<String, Float> = emptyMap(),
     val errorMessage: String? = null
 ) {
+    val displayPeerName: String get() = peerName.ifBlank { "Peer" }
+
     val canSend: Boolean
         get() = attachments.isNotEmpty() && status != TransferStatus.SENDING
 

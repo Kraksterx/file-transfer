@@ -35,6 +35,10 @@ android {
     buildFeatures {
         compose = true
     }
+    testOptions {
+        // Framework Android (mis. Log) jadi no-op di unit test JVM.
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {

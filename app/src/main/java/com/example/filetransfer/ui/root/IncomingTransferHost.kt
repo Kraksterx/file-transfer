@@ -13,7 +13,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun IncomingTransferHost(
     viewModel: IncomingTransferViewModel = hiltViewModel(),
-    onAccepted: () -> Unit = {}
+    onAccepted: (peerName: String) -> Unit = {}
 ) {
     val pendingRequest by viewModel.pendingRequest.collectAsStateWithLifecycle()
 
@@ -23,7 +23,7 @@ fun IncomingTransferHost(
         request = request,
         onAccept = { incoming ->
             viewModel.acceptRequest(incoming)
-            onAccepted()
+            onAccepted(incoming.senderName)
         },
         onReject = { incoming ->
             viewModel.rejectRequest(incoming)

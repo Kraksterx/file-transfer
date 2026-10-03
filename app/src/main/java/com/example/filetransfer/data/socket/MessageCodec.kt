@@ -84,6 +84,15 @@ object MessageCodec {
             throw CodecException("Stream habis saat baca frame REQUEST", e)
         }
         if (type != FRAME_REQUEST) throw CodecException("Frame bukan REQUEST (dapat $type)")
+        return readRequestBody(data)
+    }
+
+    /**
+     * Baca body REQUEST. Tipe frame SUDAH harus dikonsumsi lebih dulu
+     * lewat [readFrameType]; dipakai read loop single-reader.
+     */
+    fun readRequestBody(`in`: InputStream): RequestFrame {
+        val data = dataInputOf(`in`)
         data.readInt() // version: dibaca, ditoleransi untuk kompatibilitas maju
         val transferId = data.readUTF()
         val senderName = data.readUTF()
@@ -108,6 +117,12 @@ object MessageCodec {
         val data = DataInputStream(`in`)
         val type = data.readInt()
         if (type != FRAME_RESPONSE) throw CodecException("Frame bukan RESPONSE (dapat $type)")
+        return readResponseBody(data)
+    }
+
+    /** Baca body RESPONSE; tipe frame sudah dikonsumsi via [readFrameType]. */
+    fun readResponseBody(`in`: InputStream): ResponseFrame {
+        val data = dataInputOf(`in`)
         return ResponseFrame(transferId = data.readUTF(), accepted = data.readBoolean())
     }
 
@@ -125,6 +140,12 @@ object MessageCodec {
         val data = DataInputStream(`in`)
         val type = data.readInt()
         if (type != FRAME_FILE_HEADER) throw CodecException("Frame bukan FILE_HEADER (dapat $type)")
+        return readFileHeaderBody(data)
+    }
+
+    /** Baca body FILE_HEADER; tipe frame sudah dikonsumsi via [readFrameType]. */
+    fun readFileHeaderBody(`in`: InputStream): FileHeaderFrame {
+        val data = dataInputOf(`in`)
         return FileHeaderFrame(
             transferId = data.readUTF(),
             fileName = data.readUTF(),
@@ -166,6 +187,9 @@ object MessageCodec {
         data.flush()
     }
 
+    /** Baca body FILE_END (transferId); tipe frame sudah dikonsumsi via [readFrameType]. */
+    fun readFileEndBody(`in`: InputStream): String = dataInputOf(`in`).readUTF()
+
     /** Baca tipe frame berikutnya; dipakai engine untuk dispatch. */
     fun readFrameType(`in`: InputStream): Int {
         val type = try {
@@ -180,4 +204,7 @@ object MessageCodec {
     }
 
     class CodecException(message: String, cause: Throwable? = null) : Exception(message, cause)
+
+    private fun dataInputOf(`in`: InputStream): DataInputStream =
+        `in` as? DataInputStream ?: DataInputStream(`in`)
 }

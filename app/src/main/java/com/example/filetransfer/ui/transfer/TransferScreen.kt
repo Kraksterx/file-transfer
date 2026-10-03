@@ -14,9 +14,13 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -75,14 +79,16 @@ fun TransferScreen(
                     Column {
                         Text("Transfer File")
                         Text(
-                            "ke: ${state.peerName}",
+                            "ke: ${state.displayPeerName}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 },
                 navigationIcon = {
-                    TextButton(onClick = onBack) { Text("<-") }
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
+                    }
                 }
             )
         }
@@ -179,7 +185,7 @@ private fun SendingContent(
     state: TransferUiState,
     onCancel: () -> Unit
 ) {
-    Text("Mengirim ke ${state.peerName}", style = MaterialTheme.typography.titleMedium)
+    Text("Mengirim ke ${state.displayPeerName}", style = MaterialTheme.typography.titleMedium)
     Spacer(Modifier.height(12.dp))
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         items(state.attachments, key = { it.id }) { att ->
@@ -209,7 +215,7 @@ private fun SuccessContent(
             Spacer(Modifier.height(8.dp))
             Text("File berhasil terkirim", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(12.dp))
-            Text("To: ${state.peerName}", style = MaterialTheme.typography.bodyMedium)
+            Text("To: ${state.displayPeerName}", style = MaterialTheme.typography.bodyMedium)
             if (state.message.isNotBlank()) {
                 Text("Pesan: \"${state.message}\"", style = MaterialTheme.typography.bodyMedium)
             }
@@ -271,7 +277,7 @@ private fun PreviewCompose() {
     FileTransferTheme {
         ComposeContent(
             state = TransferUiState(
-                peerName = "Samsung A54",
+                peerName = "POCO F5",
                 attachments = listOf(
                     SelectedAttachment("1", "content://x/1", "foto_kelas.jpg", 4_200_000),
                     SelectedAttachment("2", "content://x/2", "tugas_pbo.pdf", 4_200_000)

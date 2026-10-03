@@ -10,7 +10,10 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     data object Discovery : Screen("discovery", "Cari", Icons.Default.Search)
     data object History : Screen("history", "Riwayat", Icons.Default.List)
     /** Destination (bukan tab): dibuka via "Kirim File" setelah peer terhubung. */
-    data object Transfer : Screen("transfer", "Transfer", Icons.Default.Send)
+    data object Transfer : Screen("transfer/{peerName}", "Transfer", Icons.Default.Send) {
+        const val ARG_PEER_NAME = "peerName"
+        fun createRoute(peerName: String) = "transfer/${android.net.Uri.encode(peerName)}"
+    }
 }
 
 /** Transfer bukan tab bar — transfer butuh koneksi dulu (via Kirim File). */

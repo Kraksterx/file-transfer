@@ -1,5 +1,6 @@
 package com.example.filetransfer.ui.transfer
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.filetransfer.data.file.FileDataSource
@@ -8,6 +9,7 @@ import com.example.filetransfer.domain.model.TransferStatus
 import com.example.filetransfer.domain.repository.TransferRepository
 import com.example.filetransfer.domain.usecase.CancelTransferUseCase
 import com.example.filetransfer.domain.usecase.SendTransferUseCase
+import com.example.filetransfer.ui.navigation.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,10 +29,15 @@ class TransferViewModel @Inject constructor(
     private val sendTransfer: SendTransferUseCase,
     private val cancelTransfer: CancelTransferUseCase,
     private val transferRepository: TransferRepository,
-    private val fileDataSource: FileDataSource
+    private val fileDataSource: FileDataSource,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(TransferUiState())
+    private val _uiState = MutableStateFlow(
+        TransferUiState(
+            peerName = savedStateHandle.get<String>(Screen.Transfer.ARG_PEER_NAME).orEmpty()
+        )
+    )
     val uiState: StateFlow<TransferUiState> = _uiState.asStateFlow()
 
     private val senderName: String = "Pixel 7"
