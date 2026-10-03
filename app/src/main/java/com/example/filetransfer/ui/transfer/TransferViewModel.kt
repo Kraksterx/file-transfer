@@ -1,41 +1,44 @@
 package com.example.filetransfer.ui.transfer
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.filetransfer.data.file.FileDataSource
 import com.example.filetransfer.domain.model.SelectedAttachment
-import com.example.filetransfer.domain.model.TransferProgress
 import com.example.filetransfer.domain.model.TransferStatus
+import com.example.filetransfer.domain.repository.TransferRepository
 import com.example.filetransfer.domain.usecase.CancelTransferUseCase
 import com.example.filetransfer.domain.usecase.SendTransferUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 /**
  * ViewModel layar Transfer (FT-05, FT-10).
  * Progres per file diambil dari TransferRepository.progress (StateFlow).
- * Selalu instantiate lewat [Factory] agar bisa DI dari AppContainer.
+ * Hilt Injected.
  */
-class TransferViewModel(
+@HiltViewModel
+class TransferViewModel @Inject constructor(
     private val sendTransfer: SendTransferUseCase,
     private val cancelTransfer: CancelTransferUseCase,
-    private val progress: StateFlow<Map<String, TransferProgress>>,
-    private val fileDataSource: com.example.filetransfer.data.file.FileDataSource,
-    private val senderName: String = "Pixel 7"
+    private val transferRepository: TransferRepository,
+    private val fileDataSource: FileDataSource
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TransferUiState())
     val uiState: StateFlow<TransferUiState> = _uiState.asStateFlow()
 
+    private val senderName: String = "Pixel 7"
     private var sendingJob: Job? = null
 
     init {
         viewModelScope.launch {
-            progress.collect { map ->
+            transferRepository.progress.collect { map ->
                 _uiState.update { state ->
                     state.copy(progressFractions = map.mapValues { (_, p) -> p.fraction })
                 }
@@ -124,18 +127,5 @@ class TransferViewModel(
     fun retry() {
         backToCompose()
         send()
-    }
-
-    /** DI manual: ViewModel di-inject lewat factory (AppContainer). */
-    class Factory(
-        private val sendTransfer: SendTransferUseCase,
-        private val cancelTransfer: CancelTransferUseCase,
-        private val progress: StateFlow<Map<String, TransferProgress>>,
-        private val fileDataSource: com.example.filetransfer.data.file.FileDataSource,
-        private val senderName: String = "Pixel 7"
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            TransferViewModel(sendTransfer, cancelTransfer, progress, fileDataSource, senderName) as T
     }
 }

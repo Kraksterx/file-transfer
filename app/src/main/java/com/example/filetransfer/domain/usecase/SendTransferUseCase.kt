@@ -3,12 +3,13 @@ package com.example.filetransfer.domain.usecase
 import com.example.filetransfer.domain.model.SelectedAttachment
 import com.example.filetransfer.domain.repository.TransferRepository
 import java.util.UUID
+import javax.inject.Inject
 
 /**
  * FT-05 sisi pengirim: buat transferId, kirim REQUEST, tunggu respons,
  * lalu stream file. Progres dibaca dari repository (FT-10).
  */
-class SendTransferUseCase(
+class SendTransferUseCase @Inject constructor(
     private val repository: TransferRepository
 ) {
     suspend operator fun invoke(
